@@ -37,6 +37,41 @@ function CREATE
 		;;
 	esac
 }
+function Create_Table
+{
+echo "please enter the table name";
+read tableName
+sudo touch /var/lib/SQL_Bash/$current_database/$tableName
+echo "How many columns do you want to enter?"
+read columnNumber
+for((i=0;i<$columnNumber;i++))
+do
+
+#read columnDataType
+echo "please enter the name of the column"
+read columnName
+echo "please enter the dataType of the column int/text"
+select columnDataType in int text
+do
+case $columnDataType in
+int)
+	sudo touch /var/lib/SQL_Bash/$current_database/.${tableName}meta	
+	sudo chmod +x .${tableName}meta
+	sudo echo $columnName"int" >> /var/lib/SQL_Bash/$current_database/.${tableName}meta
+	
+	
+	;;
+text)
+	sudo touch /var/lib/SQL_Bash/$current_database/.${tableName}meta	
+	sudo chmod +x .${tableName}meta	
+	sudo echo $columnName"text" >> /var/lib/SQL_Bash/$current_database/.${tableName}meta
+	
+	;;  		
+esac
+done
+done	
+}
+
 function DROP
 {
 	case $1 in
