@@ -39,6 +39,7 @@ function CREATE
 }
 function Create_Table
 {
+
 echo "please enter the table name";
 read tableName
 sudo touch /var/lib/SQL_Bash/$current_database/$tableName
@@ -73,7 +74,14 @@ done
 }
 function Select
 {
-	
+columnNumber="please enter the column's number"
+echo $columnNumber
+read columnNumber
+if [[ -v $columnNumber ]]
+then
+    cat -n$columnNumber /var/lib/SQL_Bash/$current_database/.${tableName}meta
+else
+    echo "the column does not exist!"
 }
 
 function Delete
