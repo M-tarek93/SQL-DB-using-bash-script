@@ -65,16 +65,42 @@ done
 echo "Table $tableName created successfully"
 }
 
-function Select
+function SELECT
 {
-echo "please enter the column's number";
-read columnNumber;
-if [[ -v $columnNumber ]]
-then
-    cat -n$columnNumber /var/lib/SQL_Bash/$current_database/.${tableName}meta;
-else
-    echo "the column does not exist!";
-fi
+case $1 in
+ALL )
+	case $2 in
+	FROM)
+	if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
+	then
+		tr , ' ' < /var/lib/SQL_Bash/$current_database/$3;
+	else
+			echo "table not found";
+	fi
+		;;
+	esac
+	;;
+*)
+	case $2 in
+	FROM)
+		if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
+		then
+		table_lines_count=$(wc -l < /var/lib/SQL_Bash/$current_database/.$3meta);
+		column_names=($(cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$3meta));
+		for((i=0;i<$table_lines_count;i++))
+		do
+			if [ ${column_names[$i]} = $1 ]
+			then
+				awk -F "," -v col=$((i+1)) '{print $col}' /var/lib/SQL_Bash/$current_database/$3;
+			fi
+		done
+		else
+			echo "table not found";
+		fi
+		;;
+	esac
+	;;
+esac
 }
 
 function Delete
