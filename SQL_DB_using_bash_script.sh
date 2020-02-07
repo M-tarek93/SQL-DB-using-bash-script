@@ -71,6 +71,18 @@ esac
 done
 done	
 }
+function Select
+{
+	
+}
+
+function Delete
+{
+rowNumber="please enter row number"
+echo $rowNumber
+read rowNumber
+sed -O '$rowNumber d'  /var/lib/SQL_Bash/$current_database/.${tableName}meta
+}
 
 function DROP
 {
