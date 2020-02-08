@@ -23,7 +23,7 @@ function CREATE
 		echo "Database already exists";
 		else
 		sudo mkdir -p /var/lib/SQL_Bash/$2;
-		fi
+		fi	
 		;;
 	TABLE)
 		if test -f /var/lib/SQL_Bash/$current_database/$2
@@ -83,20 +83,53 @@ ALL )
 *)
 	case $2 in
 	FROM)
-		if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
-		then
-		table_lines_count=$(wc -l < /var/lib/SQL_Bash/$current_database/.$3meta);
-		column_names=($(cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$3meta));
-		for((i=0;i<$table_lines_count;i++))
-		do
-			if [ ${column_names[$i]} = $1 ]
+		case $4 in
+		WHERE)
+			if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
 			then
-				awk -F "," -v col=$((i+1)) '{print $col}' /var/lib/SQL_Bash/$current_database/$3;
+			table_lines_count=$(wc -l < /var/lib/SQL_Bash/$current_database/.$3meta);
+			column_names=($(cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$3meta));
+			condition_column_name=$(echo $5 | cut -f1 -d=);
+			condition_column_value=$(echo $5 | cut -f2 -d=);
+			for((i=0;i<$table_lines_count;i++))
+			do
+				if [ ${column_names[$i]} = $condition_column_name ]
+				then
+				condition=$i;
+				fi
+			done
+			for((i=0;i<$table_lines_count;i++))
+			do
+				if [ ${column_names[$i]} = $1 ]
+				then
+				
+					awk -F "," -v col=$((i+1)) -v cond=$((condition+1)) -v cond_value=$((condition_column_value)) '{if($cond == cond_value)print $col;}' /var/lib/SQL_Bash/$current_database/$3;
+				fi
+			done
+			else
+				echo "table not found";
 			fi
-		done
-		else
-			echo "table not found";
-		fi
+			;;
+		*)
+			if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
+			then
+			table_lines_count=$(wc -l < /var/lib/SQL_Bash/$current_database/.$3meta);
+			column_names=($(cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$3meta));
+			for((i=0;i<$table_lines_count;i++))
+			do
+				if [ ${column_names[$i]} = $1 ]
+				then
+					awk -F "," -v col=$((i+1)) '{print $col}' /var/lib/SQL_Bash/$current_database/$3;
+				fi
+			done
+			else
+				echo "table not found";
+			fi
+			;;
+		esac
+		;;
+	*)
+		echo "Please use the following syntax: SELECT column_name FROM table_name WHERE column_name=column_value";
 		;;
 	esac
 	;;
