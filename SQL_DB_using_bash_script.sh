@@ -103,7 +103,7 @@ ALL )
 				if [ ${column_names[$i]} = $1 ]
 				then
 				
-					awk -F "," -v col=$((i+1)) -v cond=$((condition+1)) -v cond_value=$((condition_column_value)) '{if($cond == cond_value)print $col;}' /var/lib/SQL_Bash/$current_database/$3;
+					awk -F "," -v col=$((i+1)) -v cond=$((condition+1)) -v cond_value=$condition_column_value '{if($cond == cond_value)print $col;}' /var/lib/SQL_Bash/$current_database/$3;
 				fi
 			done
 			else
@@ -138,9 +138,9 @@ esac
 
 function Delete
 {
-echo "please enter row number";
-read rowNumber
-sed -O '$rowNumber d'  /var/lib/SQL_Bash/$current_database/.${tableName}meta
+del_file=$(SELECT $1 $2 $3 $4 $5)
+echo $del_file
+sudo sed -i "/${del_file}/d" /var/lib/SQL_Bash/$current_database/$3;
 }
 
 function DROP
