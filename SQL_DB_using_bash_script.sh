@@ -41,26 +41,36 @@ sudo touch /var/lib/SQL_Bash/$current_database/$1
 sudo touch /var/lib/SQL_Bash/$current_database/.${1}meta
 echo "How many columns do you want to enter?"
 read columnNumber
+while [[ ! $columnNumber =~ ^[0-9] ]];
+do
+    echo "Please enter number of columns (only numbers allowed)";
+    read columnNumber
+done
 for((i=0;i<$columnNumber;i++))
 do
-echo "please enter the name of the column"
-read columnName
-echo "please enter the dataType of the column int/text"
-select columnDataType in int text
-do
-case $columnDataType in
-int)	
-	echo "$columnName,"int"" | sudo tee -a /var/lib/SQL_Bash/$current_database/.${1}meta
-	break;
-	;;
-text)
-	echo "$columnName,"text"" | sudo tee -a /var/lib/SQL_Bash/$current_database/.${1}meta
-	break;
-	;;  
-*)
-	echo "Please choose int or text only"		
-esac
-done
+	echo "please enter the name of the column"
+	read columnName
+	while [[ ! $columnName =~ ^[A-Za-z0-9_]+$ ]];
+	do
+		echo "only letters,numbers and (_) are allowed";
+		read columnName
+	done
+	echo "please enter the dataType of the column int/text"
+	select columnDataType in int text
+	do
+	case $columnDataType in
+	int)	
+		echo "$columnName,"int"" | sudo tee -a /var/lib/SQL_Bash/$current_database/.${1}meta
+		break;
+		;;
+	text)
+		echo "$columnName,"text"" | sudo tee -a /var/lib/SQL_Bash/$current_database/.${1}meta
+		break;
+		;;  
+	*)
+		echo "Please choose int or text only"		
+	esac
+	done
 done
 echo "Table $tableName created successfully"
 }
@@ -73,6 +83,8 @@ ALL )
 	FROM)
 	if [ -f /var/lib/SQL_Bash/$current_database/$3 ]
 	then
+		cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$3meta | tr '\n' ' '
+		echo " ";
 		tr , ' ' < /var/lib/SQL_Bash/$current_database/$3;
 	else
 			echo "table not found";
@@ -98,12 +110,12 @@ ALL )
 				condition=$i;
 				fi
 			done
-			for((i=0;i<$table_lines_count;i++))
+			for((j=0;j<$table_lines_count;j++))
 			do
-				if [ ${column_names[$i]} = $1 ]
+				if [ ${column_names[$j]} = $1 ]
 				then
-				
-					awk -F "," -v col=$((i+1)) -v cond=$((condition+1)) -v cond_value=$condition_column_value '{if($cond == cond_value)print $col;}' /var/lib/SQL_Bash/$current_database/$3;
+				echo ${column_names[$j]};
+				awk -F "," -v col=$((j+1)) -v cond=$((condition+1)) -v cond_value=$condition_column_value '{if($cond == cond_value)print $col;}' /var/lib/SQL_Bash/$current_database/$3;
 				fi
 			done
 			else
@@ -119,6 +131,7 @@ ALL )
 			do
 				if [ ${column_names[$i]} = $1 ]
 				then
+					echo ${column_names[$i]};
 					awk -F "," -v col=$((i+1)) '{print $col}' /var/lib/SQL_Bash/$current_database/$3;
 				fi
 			done
@@ -136,11 +149,39 @@ ALL )
 esac
 }
 
-function Delete
+function DELETE
 {
-del_file=$(SELECT $1 $2 $3 $4 $5)
-echo $del_file
-sudo sed -i "/${del_file}/d" /var/lib/SQL_Bash/$current_database/$3;
+case $1 in
+	FROM)
+		case $3 in
+		WHERE)
+			if [ -f /var/lib/SQL_Bash/$current_database/$2 ]
+			then
+			table_lines_count=$(wc -l < /var/lib/SQL_Bash/$current_database/.$2meta);
+			column_names=($(cut -f1 -d, /var/lib/SQL_Bash/$current_database/.$2meta));
+			condition_column_name=$(echo $4 | cut -f1 -d=);
+			condition_column_value=$(echo $4 | cut -f2 -d=);
+			for((i=0;i<$table_lines_count;i++))
+			do
+				if [ ${column_names[$i]} = $condition_column_name ]
+				then
+				condition=$i;
+				fi
+			done
+				
+			target=$(awk -F "," -v col=$((j+1)) -v cond=$((condition+1)) -v cond_value=$condition_column_value '{if($cond == cond_value)print $0;}' /var/lib/SQL_Bash/$current_database/$2);
+			sudo sed -i "/^${target}/d" /var/lib/SQL_Bash/$current_database/$2;
+			echo "Record deleted successfully";
+			else
+				echo "table not found";
+			fi
+			;;
+		esac
+		;;
+*)
+	echo "Please use the following syntax: DELETE FROM table_name WHERE column_name=column_value";
+	;;
+esac
 }
 
 function DROP
@@ -148,10 +189,18 @@ function DROP
 	case $1 in
 	DATABASE)
 		sudo rm -r /var/lib/SQL_Bash/$2;
+		if [ ! -f /var/lib/SQL_Bash/$2 ]
+		then
+			echo "Database dropped successfully";
+		fi
 		;;
 	TABLE)
 		sudo rm /var/lib/SQL_Bash/$current_database/$2;
 		sudo rm /var/lib/SQL_Bash/$current_database/.$2meta;
+		if [ ! -f /var/lib/SQL_Bash/$current_database/$2 ]
+		then
+			echo "Table dropped successfully";
+		fi
 		;;
 	esac
 }
@@ -159,8 +208,6 @@ function USE
 {
 	case $1 in
 	DATABASE)
-		
-		cd /var/lib/SQL_Bash/$2;
 		current_database=$2;
 		;;
 		
